@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Walentynki</title>
+  <style>
+    html,body{height:100%;margin:0;font-family:verdana;background:#ffeef0}
+    .wrap{height:100%;display:flex;align-items:center;justify-content:top;flex-direction: column}
+    h1{color:#c2185b;margin-bottom:8px}
+    .buttons{position:relative;height:160px;width:420px;}
+    button{padding:12px 22px;font-size:18px;border-radius:8px;border:0;cursor:pointer}
+    #yes{background:#ff6b81;color:white;position:fixed;left:47%;top:10%;transform:translate(-50%,-50%)}
+    #no{background:#4a90e2;color:white;position:fixed;transition:left 0.12s linear,top 0.12s linear}
+    img{position:fixed;height:500px; width: 500px; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.3;}
+    
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Czy zostaniesz moja walentynka?</h1>
+    <div class="buttons">
+      <button id="yes">Tak</button>
+      <button id="no">Nie</button>
+    </div>
+    
+  </div>
+  <img src="../valentines/va.jpg" alt="okno" >
+  <script>
+    const noBtn = document.getElementById('no');
+    const yesBtn = document.getElementById('yes');
+
+   
+    const MIN_DISTANCE = 160;
+    const PADDING = 8;
+    const MAX_ATTEMPTS = 30;
+
+    function getRandomPosAvoiding(avoidX, avoidY) {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const bw = noBtn.offsetWidth;
+      const bh = noBtn.offsetHeight;
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        const x = Math.random() * (vw - bw - PADDING*2) + PADDING;
+        const y = Math.random() * (vh - bh - PADDING*2) + PADDING;
+        if (typeof avoidX === 'number' && typeof avoidY === 'number') {
+          const dx = (x + bw/2) - avoidX;
+          const dy = (y + bh/2) - avoidY;
+          if (Math.hypot(dx, dy) < MIN_DISTANCE) continue;
+        }
+        return {x, y};
+      }
+      // Jeśli nie udało się znaleźć pozycji po kilku próbach, wybierz punkt przy brzegu
+      const fallbackX = Math.min(Math.max(PADDING, (avoidX || vw/2) + MIN_DISTANCE), vw - bw - PADDING);
+      const fallbackY = Math.min(Math.max(PADDING, (avoidY || vh/2) + MIN_DISTANCE), vh - bh - PADDING);
+      return {x: fallbackX, y: fallbackY};
+    }
+
+    function moveNoRandom(avoidX, avoidY) {
+      const pos = getRandomPosAvoiding(avoidX, avoidY);
+      noBtn.style.left = pos.x + 'px';
+      noBtn.style.top = pos.y + 'px';
+    }
+
+    // initial placement: place 'no' next to 'yes' button so it's the same each load
+    function placeInitialNextToYes() {
+      const yRect = yesBtn.getBoundingClientRect();
+      const bw = noBtn.offsetWidth;
+      const bh = noBtn.offsetHeight;
+      let x = yRect.right + 12; // right next to 'Tak'
+      let y = yRect.top + (yRect.height - bh) / 2;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      x = Math.min(Math.max(PADDING, x), vw - bw - PADDING);
+      y = Math.min(Math.max(PADDING, y), vh - bh - PADDING);
+      noBtn.style.left = x + 'px';
+      noBtn.style.top = y + 'px';
+    }
+    placeInitialNextToYes();
+
+    const THRESHOLD = 140;
+    document.addEventListener('mousemove', e => {
+      const rect = noBtn.getBoundingClientRect();
+      const cx = rect.left + rect.width/2;
+      const cy = rect.top + rect.height/2;
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      const dist = Math.hypot(dx, dy);
+      if (dist < THRESHOLD) moveNoRandom(e.clientX, e.clientY);
+    });
+
+    // Touch devices: przy dotknięciu, jeśli palec blisko, uciekamy
+    document.addEventListener('touchstart', e => {
+      if (!e.touches) return;
+      const t = e.touches[0];
+      const rect = noBtn.getBoundingClientRect();
+      const cx = rect.left + rect.width/2;
+      const cy = rect.top + rect.height/2;
+      const dist = Math.hypot(t.clientX - cx, t.clientY - cy);
+      if (dist < THRESHOLD) moveNoRandom(t.clientX, t.clientY);
+    }, {passive:true});
+
+    // Zapobiegaj kliknięciu: jeśli ktoś jednak kliknie, zablokuj i uciekaj jeszcze bardziej
+    noBtn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      moveNoRandom(e.clientX, e.clientY);
+    });
+
+    // Dla przycisku TAK — pokaż prosty komunikat
+    yesBtn.addEventListener('click', ()=>{
+      alert('call me baby <3');
+    });
+
+    // Gdy zmienia się rozmiar okna, upewnij się, że przycisk pozostaje widoczny
+    window.addEventListener('resize', ()=>{
+      const rect = noBtn.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const bw = noBtn.offsetWidth;
+      const bh = noBtn.offsetHeight;
+      let left = parseFloat(noBtn.style.left) || rect.left;
+      let top = parseFloat(noBtn.style.top) || rect.top;
+      left = Math.min(Math.max(8, left), vw - bw - 8);
+      top = Math.min(Math.max(8, top), vh - bh - 8);
+      noBtn.style.left = left + 'px';
+      noBtn.style.top = top + 'px';
+    });
+  </script>
+</body>
+</html>
